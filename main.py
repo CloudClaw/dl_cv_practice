@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, random_split
 from scripts.converter import converter
 from scripts.dataset import MNISTDataset
 from scripts.preprocess import transformer
-from scripts.train import train
+from scripts.train_model import train_model
 from src.models.CustomModel import CustomModel
 
 def main():
@@ -24,8 +24,8 @@ def main():
     # converter(test, test_dir)
 
     print('-- Подготавливаем test_df и train_df датасеты --')
-    train_df = MNISTDataset('prepared_data/train', transformer)
-    test_df = MNISTDataset('prepared_data/test', transformer)
+    train_df = MNISTDataset('prepared_data/train', transformer())
+    test_df = MNISTDataset('prepared_data/test', transformer())
     print('-- Датасеты подготовлены --')
 
     print('-- Разбиваем на train_data и val_data выборки подготовленный train датасет --')
@@ -53,7 +53,7 @@ def main():
     print('-- Функция потерь и оптимизатор выбраны --')
 
     print('-- Обучаем модель --')
-    train(model, train_loader, val_loader, loss, optimizer, device)
+    train_model(model, train_loader, val_loader, loss, optimizer, device)
 
 if __name__ == "__main__":
     main()
