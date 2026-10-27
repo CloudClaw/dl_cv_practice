@@ -43,3 +43,6 @@ def converter(df, base_dir):
     img.save(img_path)
 
   print("Конвертация завершена!")
+
+if __name__ == "__main__":
+    converter()
