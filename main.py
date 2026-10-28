@@ -50,10 +50,11 @@ def main():
     print('-- Выбор функции потерь и оптимизатора --')
     loss = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    lr_sheduler = torch.optim.lr_sheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     print('-- Функция потерь и оптимизатор выбраны --')
 
     print('-- Обучаем модель --')
-    train_model(model, train_loader, val_loader, loss, optimizer, device)
+    train_model(model, train_loader, val_loader, loss, optimizer, device, lr_sheduler)
 
 if __name__ == "__main__":
     main()

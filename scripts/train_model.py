@@ -10,8 +10,9 @@ train_loss = []
 train_acc = []
 val_loss = []
 val_acc = []
+lr_list = []
 
-def train_model(model, train_loader, val_loader, loss, optimizer, device):
+def train_model(model, train_loader, val_loader, loss, optimizer, device, lr_sheduler):
     for epoch in range(EPOCHS):
         # Режим тренировки модели
         model.train()
@@ -81,7 +82,11 @@ def train_model(model, train_loader, val_loader, loss, optimizer, device):
             val_loss.append(mean_val_loss)
             val_acc.append(running_val_acc)
 
-            print(f'Epoch {epoch}/{EPOCHS}, train_loss={mean_train_loss:.4f}, train_acc={running_train_acc:.4f}, val_loss={mean_val_loss:.4f}, val_acc={running_val_acc:.4f}')
+        lr_sheduler.step(mean_val_loss)
+        lr = lr_sheduler._last_lr[0] # Значение скорости обучения
+        lr_list.append(lr)
+
+        print(f'Epoch {epoch}/{EPOCHS}, train_loss={mean_train_loss:.4f}, train_acc={running_train_acc:.4f}, val_loss={mean_val_loss:.4f}, val_acc={running_val_acc:.4f}, lr={lr: .4f}')
 
 if __name__ == "__main__":
     train_model()
