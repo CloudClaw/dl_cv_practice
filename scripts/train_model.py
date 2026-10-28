@@ -15,12 +15,13 @@ def train_model(model, train_loader, val_loader, loss, optimizer, device, lr_she
 
     for epoch in range(EPOCHS):
         train_loop = tqdm(train_loader, leave=False) # Добавляем прогресс бар
+        val_loop = tqdm(val_loader, leave=False) 
         
         mean_train_loss, running_train_acc = train(
-            model, train_loader, device, optimizer, loss, epoch + 1, EPOCHS, train_loop)
+            model, train_loop, device, optimizer, loss, epoch + 1, EPOCHS)
 
         mean_val_loss, running_val_acc = validate(
-            model, val_loader, loss, device, epoch + 1, EPOCHS, train_loop)      
+            model, val_loop, loss, device, epoch + 1, EPOCHS)      
 
         lr_sheduler.step(mean_val_loss)
         lr = lr_sheduler._last_lr[0] # Значение скорости обучения

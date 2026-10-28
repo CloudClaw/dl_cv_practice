@@ -3,7 +3,7 @@ import torch
 val_loss = []
 val_acc = []
 
-def validate(model, val_loader, loss, device, epoch, EPOCHS, train_loop):
+def validate(model, val_loader, loss, device, epoch, EPOCHS):
     # Валидация модели
     model.eval()
     correct = 0
@@ -29,7 +29,7 @@ def validate(model, val_loader, loss, device, epoch, EPOCHS, train_loop):
             correct += (pred.argmax(dim=1) == targets.argmax(dim=1)).sum().item()
             total += targets.size(0)
 
-            train_loop.set_description(f'Epoch {epoch}/{EPOCHS}, val_loss={batch_loss.item():.4f}')
+            val_loader.set_description(f'Epoch {epoch}/{EPOCHS}, val_loss={batch_loss.item():.4f}')
 
         mean_val_loss = sum(running_val_loss) / len(running_val_loss)
 

@@ -5,7 +5,7 @@ from tqdm import tqdm
 train_loss = []
 train_acc = []
 
-def train(model, train_loader, device, optimizer, loss, epoch, EPOCHS, train_loop):
+def train(model, train_loader, device, optimizer, loss, epoch, EPOCHS):
     # Режим тренировки модели
     model.train()
     running_train_loss = []
@@ -37,7 +37,7 @@ def train(model, train_loader, device, optimizer, loss, epoch, EPOCHS, train_loo
         correct += (pred.argmax(dim=1) == targets.argmax(dim=1)).sum().item()
         total += targets.size(0)
 
-        train_loop.set_description(f'Epoch {epoch}/{EPOCHS}, train_loss={mean_train_loss:.4f}')
+        train_loader.set_description(f'Epoch {epoch}/{EPOCHS}, train_loss={mean_train_loss:.4f}')
 
     # Рассчет accuracy
     running_train_acc = correct / total
@@ -45,7 +45,7 @@ def train(model, train_loader, device, optimizer, loss, epoch, EPOCHS, train_loo
     train_loss.append(mean_train_loss)
     train_acc.append(running_train_acc)
 
-    return mean_train_loss, running_train_acc, train_loop
+    return mean_train_loss, running_train_acc
 
 if __name__ == '__main__':
     train()
