@@ -5,9 +5,12 @@ import pandas as pd
 from torch.utils.data import DataLoader, random_split
 from scripts.converter import converter
 from scripts.dataset import MNISTDataset
-from scripts.preprocess import transformer
+from scripts.preprocess_custom import transformer_custom
+from scripts.preprocess_for_conv import transformer_for_conv
 from scripts.train_model import train_model
 from src.models.CustomModel.CustomModel import CustomModel
+from src.models.VGG.VGG import VGG
+from src.models.ResNet.ResNet import ResNet
 from utils.test import test
 
 def main():
@@ -25,8 +28,15 @@ def main():
     # converter(test_df_raw, test_dir)
 
     print('-- Подготавливаем test_df и train_df датасеты --')
-    train_df = MNISTDataset('prepared_data/train', transformer())
-    test_df = MNISTDataset('prepared_data/test', transformer())
+    
+    # Выбираем трансформер в зависимости от модели!
+    # Для Custom модели (MLP)
+    # train_df = MNISTDataset('prepared_data/train', transformer_custom())
+    # test_df = MNISTDataset('prepared_data/test', transformer_custom())
+    
+    # Для VGG и ResNet (CNN)
+    train_df = MNISTDataset('prepared_data/train', transformer_for_conv())
+    test_df = MNISTDataset('prepared_data/test', transformer_for_conv())
     print('-- Датасеты подготовлены --')
 
     print('-- Разбиваем на train_data и val_data выборки подготовленный train датасет --')
@@ -40,27 +50,43 @@ def main():
     test_loader = DataLoader(test_df, batch_size=batch_size, shuffle=False)
     print('-- Разбитие на батчи готово --')
 
-    print('-- Инициализирауем модель --')
-    model = CustomModel(784, 10).to(device)
+    print('-- Инициализируем модель --')
+    custom_model = CustomModel(784, 10).to(device)
+    vgg_model = VGG().to(device)
+    resnet_model = ResNet().to(device)
     print('-- Модель инициализирована --')
-
-    x = torch.randn([16, 784], dtype=torch.float32).to(device)
-    out = model(x)
-    out.shape
 
     print('-- Выбор функции потерь и оптимизатора --')
     loss = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    
+    # Создаем ОПТИМИЗАТОРЫ (каждый для своей модели)
+    custom_model_optimizer = torch.optim.Adam(custom_model.parameters(), lr=0.001)
+    vgg_model_optimizer = torch.optim.Adam(vgg_model.parameters(), lr=0.001)
+    resnet_model_optimizer = torch.optim.Adam(resnet_model.parameters(), lr=0.001)
+
+    # Создаем ПЛАНИРОВЩИКИ (каждый привязан к своему оптимизатору)
+    custom_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(custom_model_optimizer, mode='min', factor=0.1, patience=5)
+    vgg_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(vgg_model_optimizer, mode='min', factor=0.1, patience=5)
+    resnet_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(resnet_model_optimizer, mode='min', factor=0.1, patience=5)
     print('-- Функция потерь и оптимизатор выбраны --')
 
     print('-- Обучаем модель --')
-    train_model(model, train_loader, val_loader, loss, optimizer, device, lr_scheduler)
+    # 1. Обучение CustomModel
+    # train_model(custom_model, train_loader, val_loader, loss, custom_model_optimizer, device, custom_lr_scheduler, is_conv=False)
+    # 2. Обучение VGG
+    # train_model(vgg_model, train_loader, val_loader, loss, vgg_model_optimizer, device, vgg_lr_scheduler, is_conv=True)
+    # 3. Обучение ResNet
+    train_model(resnet_model, train_loader, val_loader, loss, resnet_model_optimizer, device, resnet_lr_scheduler, is_conv=True)
     print('-- Модель обучена --')
 
     print('-- Тестируем модель --')
-    # По хорошему загрузить лучшую модель
-    mean_test_loss, running_test_acc = test(model, test_loader, loss, device)
+    # 1. Тест CustomModel
+    # mean_test_loss, running_test_acc = test(custom_model, test_loader, loss, device) 
+    # 2. Тест VGG
+    # mean_test_loss, running_test_acc = test(vgg_model, test_loader, loss, device)
+    # 3. Тест ResNet
+    mean_test_loss, running_test_acc = test(resnet_model, test_loader, loss, device)
+
     print(f'test_loss={mean_test_loss:.4f}')
     print(f'test_acc={running_test_acc:.4f}')
 

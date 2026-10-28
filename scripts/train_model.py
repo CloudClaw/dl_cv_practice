@@ -5,12 +5,12 @@ from utils.train import train
 from utils.validate import validate
 from utils.test import test
 
-EPOCHS = 50
+EPOCHS = 10
 lr_list = []
 best_loss = None
 idle = 0 # Число итерация без улучшений модели
 
-def train_model(model, train_loader, val_loader, loss, optimizer, device, lr_sheduler):
+def train_model(model, train_loader, val_loader, loss, optimizer, lr_sheduler):
     global best_loss, idle
 
     for epoch in range(EPOCHS):
@@ -18,13 +18,13 @@ def train_model(model, train_loader, val_loader, loss, optimizer, device, lr_she
         val_loop = tqdm(val_loader, leave=False) 
         
         mean_train_loss, running_train_acc = train(
-            model, train_loop, device, optimizer, loss, epoch + 1, EPOCHS)
+            model, train_loop, optimizer, loss, epoch + 1, EPOCHS)
 
         mean_val_loss, running_val_acc = validate(
-            model, val_loop, loss, device, epoch + 1, EPOCHS)      
+            model, val_loop, loss, epoch + 1, EPOCHS)      
 
         lr_sheduler.step(mean_val_loss)
-        lr = lr_sheduler._last_lr[0] # Значение скорости обучения
+        lr = optimizer.param_groups[0]['lr'] # Значение скорости обучения
         lr_list.append(lr)
 
         print(f'Epoch {epoch}/{EPOCHS}')
@@ -40,9 +40,9 @@ def train_model(model, train_loader, val_loader, loss, optimizer, device, lr_she
         if mean_val_loss < best_loss:
             best_loss = mean_val_loss
             idle = 0
-
-            torch.save(model.state_dict(), f'src/models/CustomModel/model_state_dict_epoch_{epoch + 1}.pt')
-
+            # Сохраняем модель в зависимости от ее типа (чтобы не перезаписать)
+            model_name = model.__class__.__name__
+            torch.save(model.state_dict(), f'src/models/{model_name}/best_model.pt')
         else:
             idle += 1
 
