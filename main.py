@@ -3,7 +3,6 @@ import torch.nn as nn
 import pandas as pd
 
 from torch.utils.data import DataLoader, random_split
-from scripts.converter import converter
 from scripts.dataset import MNISTDataset
 from scripts.preprocess_custom import transformer_custom
 from scripts.preprocess_for_conv import transformer_for_conv
@@ -14,81 +13,78 @@ from src.models.ResNet.ResNet import ResNet
 from utils.test import test
 
 def main():
-    print('-- Выбираем устройство на котором будем обучать --')
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'-- Устройство: {device} --')
 
-    print('-- Конвертируем данные --')
-    test_dir = 'prepared_data/test'
-    train_dir = 'prepared_data/train'
-
-    train = pd.read_csv('data/train/fashion-mnist_train.csv')
-    test_df_raw = pd.read_csv('data/test/fashion-mnist_test.csv')
-
-    # converter(train, train_dir)
-    # converter(test_df_raw, test_dir)
-
-    print('-- Подготавливаем test_df и train_df датасеты --')
-    
-    # Выбираем трансформер в зависимости от модели!
-    # Для Custom модели (MLP)
-    # train_df = MNISTDataset('prepared_data/train', transformer_custom())
-    # test_df = MNISTDataset('prepared_data/test', transformer_custom())
-    
-    # Для VGG и ResNet (CNN)
-    train_df = MNISTDataset('prepared_data/train', transformer_for_conv())
-    test_df = MNISTDataset('prepared_data/test', transformer_for_conv())
-    print('-- Датасеты подготовлены --')
-
-    print('-- Разбиваем на train_data и val_data выборки подготовленный train датасет --')
-    train_data, val_data = random_split(train_df, [0.8, 0.2])
-    print('-- Выборки подготовлены')
-
+    # ==========================================
+    # 1. ПОДГОТОВКА ДАННЫХ
+    # ==========================================
+    print('-- Подготавливаем данные --')
     batch_size = 32
-    print(f'-- Разбиваем выборки на батчи, train_data перемешиваем, размер батча {batch_size} --')
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_df, batch_size=batch_size, shuffle=False)
-    print('-- Разбитие на батчи готово --')
 
-    print('-- Инициализируем модель --')
-    custom_model = CustomModel(784, 10).to(device)
-    vgg_model = VGG().to(device)
-    resnet_model = ResNet().to(device)
-    print('-- Модель инициализирована --')
+    # А) Датасеты для CustomModel (MLP) - плоские, 1 канал, 28x28
+    train_df_custom = MNISTDataset('data/train/fashion-mnist_train.csv', transformer_custom())
+    test_df_custom = MNISTDataset('data/test/fashion-mnist_test.csv', transformer_custom())
+    train_data_c, val_data_c = random_split(train_df_custom, [0.8, 0.2])
 
-    print('-- Выбор функции потерь и оптимизатора --')
-    loss = nn.CrossEntropyLoss()
+    train_loader_c = DataLoader(train_data_c, batch_size=batch_size, shuffle=True)
+    val_loader_c = DataLoader(val_data_c, batch_size=batch_size, shuffle=False)
+    test_loader_c = DataLoader(test_df_custom, batch_size=batch_size, shuffle=False)
+
+    # Б) Датасеты для VGG и ResNet (CNN) - 3 канала, 64x64
+    train_df_conv = MNISTDataset('data/train/fashion-mnist_train.csv', transformer_for_conv())
+    test_df_conv = MNISTDataset('data/test/fashion-mnist_test.csv', transformer_for_conv())
+    train_data_conv, val_data_conv = random_split(train_df_conv, [0.8, 0.2])
     
-    # Создаем ОПТИМИЗАТОРЫ (каждый для своей модели)
-    custom_model_optimizer = torch.optim.Adam(custom_model.parameters(), lr=0.001)
-    vgg_model_optimizer = torch.optim.Adam(vgg_model.parameters(), lr=0.001)
-    resnet_model_optimizer = torch.optim.Adam(resnet_model.parameters(), lr=0.001)
+    train_loader_conv = DataLoader(train_data_conv, batch_size=batch_size, shuffle=True)
+    val_loader_conv = DataLoader(val_data_conv, batch_size=batch_size, shuffle=False)
+    test_loader_conv = DataLoader(test_df_conv, batch_size=batch_size, shuffle=False)
+    print('-- Данные готовы --')
 
-    # Создаем ПЛАНИРОВЩИКИ (каждый привязан к своему оптимизатору)
-    custom_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(custom_model_optimizer, mode='min', factor=0.1, patience=5)
-    vgg_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(vgg_model_optimizer, mode='min', factor=0.1, patience=5)
-    resnet_lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(resnet_model_optimizer, mode='min', factor=0.1, patience=5)
-    print('-- Функция потерь и оптимизатор выбраны --')
+    # ==========================================
+    # 2. ОБУЧЕНИЕ МОДЕЛЕЙ
+    # ==========================================
+    loss = nn.CrossEntropyLoss()
+    results = [] # Сюда будем собирать метрики для таблицы
 
-    print('-- Обучаем модель --')
-    # 1. Обучение CustomModel
-    # train_model(custom_model, train_loader, val_loader, loss, device, custom_model_optimizer, custom_lr_scheduler)
-    # 2. Обучение VGG
-    # train_model(vgg_model, train_loader, val_loader, loss, device, vgg_model_optimizer, vgg_lr_scheduler)
-    # 3. Обучение ResNet
-    train_model(resnet_model, train_loader, val_loader, loss, device, resnet_model_optimizer, resnet_lr_scheduler)
-    print('-- Модель обучена --')
+    # --- Модель 1: CustomModel (MLP) ---
+    print('\n=== Обучение CustomModel (MLP) ===')
+    custom_model = CustomModel(784, 10).to(device)
+    opt_custom = torch.optim.Adam(custom_model.parameters(), lr=0.001)
+    sched_custom = torch.optim.lr_scheduler.ReduceLROnPlateau(opt_custom, mode='min', patience=3)
+    
+    train_model(custom_model, train_loader_c, val_loader_c, loss, device, opt_custom, sched_custom)
+    test_loss, test_acc = test(custom_model, test_loader_c, loss, device)
+    results.append({'Model': 'CustomModel (MLP)', 'Test Loss': test_loss, 'Test Acc': test_acc})
 
-    print('-- Тестируем модель --')
-    # 1. Тест CustomModel
-    # mean_test_loss, running_test_acc = test(custom_model, test_loader, loss, device) 
-    # 2. Тест VGG
-    # mean_test_loss, running_test_acc = test(vgg_model, test_loader, loss, device)
-    # 3. Тест ResNet
-    mean_test_loss, running_test_acc = test(resnet_model, test_loader, loss, device)
+    # --- Модель 2: VGG ---
+    print('\n=== Обучение VGG19 ===')
+    vgg_model = VGG().to(device)
+    opt_vgg = torch.optim.Adam(vgg_model.parameters(), lr=0.001)
+    sched_vgg = torch.optim.lr_scheduler.ReduceLROnPlateau(opt_vgg, mode='min', patience=3)
+    
+    train_model(vgg_model, train_loader_conv, val_loader_conv, loss, device, opt_vgg, sched_vgg)
+    test_loss, test_acc = test(vgg_model, test_loader_conv, loss, device)
+    results.append({'Model': 'VGG19', 'Test Loss': test_loss, 'Test Acc': test_acc})
 
-    print(f'test_loss={mean_test_loss:.4f}')
-    print(f'test_acc={running_test_acc:.4f}')
+    # --- Модель 3: ResNet ---
+    print('\n=== Обучение ResNet50 ===')
+    resnet_model = ResNet().to(device)
+    opt_resnet = torch.optim.Adam(resnet_model.parameters(), lr=0.001)
+    sched_resnet = torch.optim.lr_scheduler.ReduceLROnPlateau(opt_resnet, mode='min', patience=3)
+    
+    train_model(resnet_model, train_loader_conv, val_loader_conv, loss, device, opt_resnet, sched_resnet)
+    test_loss, test_acc = test(resnet_model, test_loader_conv, loss, device)
+    results.append({'Model': 'ResNet50', 'Test Loss': test_loss, 'Test Acc': test_acc})
+
+    # ==========================================
+    # 3. ВЫВОД РЕЗУЛЬТАТОВ
+    # ==========================================
+    print('\n' + '='*50)
+    print('ИТОГОВЫЕ РЕЗУЛЬТАТЫ:')
+    df_results = pd.DataFrame(results)
+    print(df_results.to_string(index=False))
+    print('='*50)
 
 if __name__ == "__main__":
     main()

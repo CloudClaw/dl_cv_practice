@@ -11,8 +11,6 @@ best_loss = None
 idle = 0 # Число итерация без улучшений модели
 
 def train_model(model, train_loader, val_loader, loss, device, optimizer, lr_sheduler):
-    global best_loss, idle
-
     for epoch in range(EPOCHS):
         train_loop = tqdm(train_loader, leave=False) # Добавляем прогресс бар
         val_loop = tqdm(val_loader, leave=False) 
