@@ -10,7 +10,7 @@ lr_list = []
 best_loss = None
 idle = 0 # Число итерация без улучшений модели
 
-def train_model(model, train_loader, val_loader, loss, optimizer, lr_sheduler):
+def train_model(model, train_loader, val_loader, loss, device, optimizer, lr_sheduler):
     global best_loss, idle
 
     for epoch in range(EPOCHS):
@@ -18,10 +18,10 @@ def train_model(model, train_loader, val_loader, loss, optimizer, lr_sheduler):
         val_loop = tqdm(val_loader, leave=False) 
         
         mean_train_loss, running_train_acc = train(
-            model, train_loop, optimizer, loss, epoch + 1, EPOCHS)
+            model, train_loop, device, optimizer, loss, epoch + 1, EPOCHS)
 
         mean_val_loss, running_val_acc = validate(
-            model, val_loop, loss, epoch + 1, EPOCHS)      
+            model, val_loop, loss, device, epoch + 1, EPOCHS)      
 
         lr_sheduler.step(mean_val_loss)
         lr = optimizer.param_groups[0]['lr'] # Значение скорости обучения

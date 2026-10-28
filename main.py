@@ -72,11 +72,11 @@ def main():
 
     print('-- Обучаем модель --')
     # 1. Обучение CustomModel
-    # train_model(custom_model, train_loader, val_loader, loss, custom_model_optimizer, device, custom_lr_scheduler, is_conv=False)
+    # train_model(custom_model, train_loader, val_loader, loss, device, custom_model_optimizer, custom_lr_scheduler)
     # 2. Обучение VGG
-    # train_model(vgg_model, train_loader, val_loader, loss, vgg_model_optimizer, device, vgg_lr_scheduler, is_conv=True)
+    # train_model(vgg_model, train_loader, val_loader, loss, device, vgg_model_optimizer, vgg_lr_scheduler)
     # 3. Обучение ResNet
-    train_model(resnet_model, train_loader, val_loader, loss, resnet_model_optimizer, device, resnet_lr_scheduler, is_conv=True)
+    train_model(resnet_model, train_loader, val_loader, loss, device, resnet_model_optimizer, resnet_lr_scheduler)
     print('-- Модель обучена --')
 
     print('-- Тестируем модель --')
