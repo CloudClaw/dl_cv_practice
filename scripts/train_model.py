@@ -5,7 +5,7 @@ from utils.train import train
 from utils.validate import validate
 from utils.test import test
 
-EPOCHS = 10
+EPOCHS = 5
 lr_list = []
 best_loss = None
 idle = 0 # Число итерация без улучшений модели

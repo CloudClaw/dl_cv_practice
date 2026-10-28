@@ -43,7 +43,7 @@ def main():
     train_data, val_data = random_split(train_df, [0.8, 0.2])
     print('-- Выборки подготовлены')
 
-    batch_size = 16
+    batch_size = 32
     print(f'-- Разбиваем выборки на батчи, train_data перемешиваем, размер батча {batch_size} --')
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False)

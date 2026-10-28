@@ -3,10 +3,9 @@ import torchvision.transforms.v2 as v2
 
 def transformer_for_conv():
     return v2.Compose([
-        # 1. Ресайз до 224x224 (VGG ожидает минимум 224)
-        v2.Resize((224, 224)),
+        v2.Resize((64, 64)),
         # 2. Если картинка 1-канальная (PNG), конвертируем в 3 канала
-        v2.Lambda(lambda x: x.convert('RGB') if x.mode != 'RGB' else x),
+        v2.Grayscale(num_output_channels=3),
         # 3. Превращаем в тензор (в v2 ToTensor работает как ToImage + ToDtype)
         v2.ToTensor(),
         # 4. Нормализация под ImageNet (так как мы используем предобученные веса)
