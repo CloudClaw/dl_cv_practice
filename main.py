@@ -7,7 +7,8 @@ from scripts.converter import converter
 from scripts.dataset import MNISTDataset
 from scripts.preprocess import transformer
 from scripts.train_model import train_model
-from src.models.CustomModel import CustomModel
+from src.models.CustomModel.CustomModel import CustomModel
+from utils.test import test
 
 def main():
     print('-- Выбираем устройство на котором будем обучать --')
@@ -18,10 +19,10 @@ def main():
     train_dir = 'prepared_data/train'
 
     train = pd.read_csv('data/train/fashion-mnist_train.csv')
-    test = pd.read_csv('data/test/fashion-mnist_test.csv')
+    test_df_raw = pd.read_csv('data/test/fashion-mnist_test.csv')
 
     # converter(train, train_dir)
-    # converter(test, test_dir)
+    # converter(test_df_raw, test_dir)
 
     print('-- Подготавливаем test_df и train_df датасеты --')
     train_df = MNISTDataset('prepared_data/train', transformer())
@@ -43,18 +44,25 @@ def main():
     model = CustomModel(784, 10).to(device)
     print('-- Модель инициализирована --')
 
-    input = torch.randn([16, 784], dtype=torch.float32).to(device)
-    out = model(input)
+    x = torch.randn([16, 784], dtype=torch.float32).to(device)
+    out = model(x)
     out.shape
 
     print('-- Выбор функции потерь и оптимизатора --')
     loss = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    lr_sheduler = torch.optim.lr_sheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     print('-- Функция потерь и оптимизатор выбраны --')
 
     print('-- Обучаем модель --')
-    train_model(model, train_loader, val_loader, loss, optimizer, device, lr_sheduler)
+    train_model(model, train_loader, val_loader, loss, optimizer, device, lr_scheduler)
+    print('-- Модель обучена --')
+
+    print('-- Тестируем модель --')
+    # По хорошему загрузить лучшую модель
+    mean_test_loss, running_test_acc = test(model, test_loader, loss, device)
+    print(f'test_loss={mean_test_loss:.4f}')
+    print(f'test_acc={running_test_acc:.4f}')
 
 if __name__ == "__main__":
     main()
